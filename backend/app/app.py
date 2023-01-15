@@ -18,9 +18,25 @@ async def shutdown():
     await database.close()
 
 @app.get('/lemmas/')
-async def read_notes():
+async def get_lemmas():
     query = 'SELECT "id", "text", "part_of_speech" FROM "lemmas"'
     async with database.cursor() as cursor:
         await cursor.execute(query)
         result = [c async for c in cursor]
+    return result
+
+@app.get('/lemma/{lemma_id}')
+async def get_lemma(lemma_id: int):
+    async with database.cursor() as cursor:
+        await cursor.execute('SELECT "id", "text", "part_of_speech" FROM "lemmas" where "id"=%s', (lemma_id,))
+        return await cursor.fetchone()
+
+@app.get('/paradigm/{lemma_id}')
+async def get_paradigm(lemma_id: int):
+    result = {}
+    async with database.cursor() as cursor:
+        await cursor.execute('SELECT "id", "text", "part_of_speech" FROM "lemmas" where "id"=%s', (lemma_id,))
+        result['lemma'] = await cursor.fetchone()
+        await cursor.execute('SELECT "id", "text" FROM "word_forms" where "lemma_id"=%s', (lemma_id,))
+        result['word_forms'] = [c async for c in cursor]
     return result
